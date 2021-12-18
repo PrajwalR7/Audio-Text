@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js" integrity="sha512-hcPg/5yQzb6Ocz2NHy+XdRfmET1kTOtZc1l6Yt2TyriHW6WpK80hoLfaKG5wI7SqLt/x6IiV9kRoInYCA/BEWw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="./js/recorder.min.js"></script>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <button onclick="startRec()" 
+  style="padding: 10px; background-color: rgb(46, 139, 46); color: white; border:none;"
+  >Start recording</button>
+  <button onclick="stopRec()"
+  style="padding: 10px; background-color: rgb(175, 59, 39); color: white; border:none;">Stop recording</button>
+  <div id="transcript" style="border: 1px solid black; padding:10px; margin-top: 20px;">
+  </div>
+  <script>
+    let words = "";
+    var constraints = { audio: true };
+    const mediaRecorder = navigator.mediaDevices.getUserMedia(constraints);
+
+    const sampleRate = 16000;
+
+    const recorder = new Recorder({
+      encoderPath: "/js/encoderWorker.min.js",
+      leaveStreamOpen: true,
+      numberOfChannels: 1,
+      encoderSampleRate: sampleRate,
+      streamPages: true,
+      maxBuffersPerPage: 1,
+    });
+
+    function startRec() {
+      words = "";
+      const socket = io.connect('http://localhost:5000');
+      this.socket = socket;
+      // recorder.start();
+    socket.on("can-open-mic", () => {
+      recorder.start();
+      console.log('started recording')
+    });
+
+    recorder.ondataavailable = (e) => {
+      socket.emit("microphone-stream", e.buffer);
+    };
+
+    socket.on("transcript-result", (socketId, jsonFromServer) => {
+      words += JSON.parse(jsonFromServer).channel.alternatives[0].transcript + " ";
+      console.log("words",words);
+      if (words !== "") {
+        const divNode = document.getElementById("transcript");
+        divNode.innerText = words;
+      }
+    });
+
+  }
+  
+  function stopRec() {
+    socket.emit("stopRecording")
+    recorder.stop()
+  }
+
+
+
+</script>
+</body>
+</html>
