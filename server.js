@@ -7,6 +7,9 @@ const server = http.createServer(app);
 const WebSocket = require("ws");
 // const SocketIoServer = require('socket.io').Server;
 const { Deepgram } = require('@deepgram/sdk');
+const dotenv = require('dotenv')
+
+dotenv.config()
 
 const io = require('socket.io')(server,{
   cors: {
@@ -17,7 +20,7 @@ const io = require('socket.io')(server,{
 
 function handle_connection(socket) {
 
-  const deepgram = new Deepgram("8cd1cc5cae7a2145b1a4bed741f47b8887feac2d");
+  const deepgram = new Deepgram(process.env.DEEPGRAM_KEY);
 
   const dgSocket = deepgram.transcription.live({
     punctuate: true
